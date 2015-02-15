@@ -32,6 +32,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       d.ports = [ "18080:8080" ]
     end
   end
+
+  config.vm.define "dockerregistry" do |config|
+    config.vm.provider "docker" do |d|
+      d.vagrant_vagrantfile = "docker/Vagrantfile"
+      d.image = "registry"
+      d.name = "dockerregistry"
+      d.ports = [ "5000:5000" ]
+    end
+  end
  
   config.vm.define "go" do |config|
     config.vm.synced_folder "go/etc/", "/etc/go/changed" 
@@ -43,6 +52,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       d.ports = [ "28153:8153" ]
       d.name = "go-server"
       d.link("git:git")
+      d.link("dockerregistry:dockerregistry")
 # For nginx proxy to find it.
 #      d.env = {"VIRTUAL_HOST"   => "go.lab.sennerholm.net",
 #       	       "VIRTUAL_PORT"   => "28153"}
@@ -54,12 +64,26 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.define "go-agent" do |config|
     config.vm.provider "docker" do |d|
       d.vagrant_vagrantfile = "docker/Vagrantfile"
-      d.build_dir = "go-agent" 
+      d.build_dir = "go-agent"
       d.name = "go-agent"
       d.volumes = [ "/var/run/docker.sock:/var/run/docker.sock" ]
       d.link("go-server:go-server")
       d.link("repository:repository")
       d.link("git:git")
+      d.link("dockerregistry:dockerregistry")
+    end
+  end
+
+  config.vm.define "go-agent2" do |config|
+    config.vm.provider "docker" do |d|
+      d.vagrant_vagrantfile = "docker/Vagrantfile"
+      d.build_dir = "go-agent"
+      d.name = "go-agent2"
+      d.volumes = [ "/var/run/docker.sock:/var/run/docker.sock" ]
+      d.link("go-server:go-server")
+      d.link("repository:repository")
+      d.link("git:git")
+      d.link("dockerregistry:dockerregistry")
     end
   end
 
