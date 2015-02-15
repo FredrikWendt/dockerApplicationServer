@@ -23,3 +23,7 @@ och:
  58080 prod
 
 Så får du upp en pipeline
+
+Alternativ
+----------
+    VAGRANT_DEFAULT_PROVIDER=docker
