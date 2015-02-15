@@ -4,49 +4,49 @@
   <pipelines group="Doodleshop">
     <pipeline name="Build" labeltemplate="1.0.${COUNT}" isLocked="false">
       <materials>
-        <git url="https://github.com/dmarell/doodleshop" />
+        <git url="https://github.com/FredrikWendt/doodleshop" />
       </materials>
-      <stage name="Set_version">
+      <stage name="Maven_package_Docker_build" cleanWorkingDir="true">
         <jobs>
-          <job name="mvn_set_version">
+          <job name="mvn_package_docker_build">
             <tasks>
+              <exec command="/usr/bin/env">
+                <runif status="passed" />
+              </exec>
               <exec command="mvn">
                 <arg>versions:set</arg>
                 <arg>-DnewVersion=${env.GO_PIPELINE_LABEL}</arg>
                 <arg>-B</arg>
                 <runif status="passed" />
               </exec>
-            </tasks>
-          </job>
-        </jobs>
-      </stage>
-      <stage name="Package" fetchMaterials="false">
-        <jobs>
-          <job name="mvn_clean_package">
-            <tasks>
               <exec command="mvn">
                 <arg>clean</arg>
                 <arg>package</arg>
                 <arg>-B</arg>
+                <runif status="passed" />
               </exec>
-            </tasks>
-          </job>
-        </jobs>
-      </stage>
-      <stage name="CreateDockerImage" fetchMaterials="false">
-        <jobs>
-          <job name="Docker_Build">
-            <tasks>
+              <exec command="ls">
+                <arg>-lR</arg>
+                <arg>.</arg>
+                <runif status="passed" />
+              </exec>
               <exec command="/bin/bash">
-                <arg>-c</arg>
-                <arg>sudo docker build --tag=doodleshop:$GO_PIPELINE_LABEL .</arg>
+                <arg>build-docker-container.sh</arg>
                 <runif status="passed" />
               </exec>
             </tasks>
+            <artifacts>
+              <artifact src="*.sh" dest="scripts" />
+            </artifacts>
           </job>
         </jobs>
       </stage>
-      <stage name="DeployToAutoSmall" fetchMaterials="false">
+    </pipeline>
+    <pipeline name="Deploy_and_test_Small" labeltemplate="1.0.${COUNT}" isLocked="false">
+      <materials>
+        <pipeline pipelineName="Build" stageName="Maven_package_Docker_build" materialName="Doodleshop_Docker_Image" />
+      </materials>
+      <stage name="DeployToAutoSmall" cleanWorkingDir="true">
         <environmentvariables>
           <variable name="DOODLE_ENV">
             <value>autosmall</value>
@@ -55,6 +55,9 @@
         <jobs>
           <job name="DeployAndSmokeTests">
             <tasks>
+              <fetchartifact pipeline="Build" stage="Maven_package_Docker_build" job="mvn_package_docker_build" srcdir="deployandsmoke.sh">
+                <runif status="passed" />
+              </fetchartifact>
               <exec command="bash">
                 <arg>deployandsmoke.sh</arg>
                 <arg>2</arg>
@@ -63,7 +66,7 @@
           </job>
         </jobs>
       </stage>
-      <stage name="TestAutoSmall" fetchMaterials="false">
+      <stage name="TestAutoSmall">
         <environmentvariables>
           <variable name="DOODLE_ENV">
             <value>autosmall</value>
@@ -81,7 +84,13 @@
           </job>
         </jobs>
       </stage>
-      <stage name="DeployToAutoLarge" fetchMaterials="false">
+    </pipeline>
+    <pipeline name="Deploy_and_test_Large" labeltemplate="1.0.${COUNT}" isLocked="false">
+      <materials>
+        <git url="https://github.com/FredrikWendt/doodleshop" />
+        <pipeline pipelineName="Build" stageName="Maven_package_Docker_build" materialName="Doodleshop_Docker_Image" />
+      </materials>
+      <stage name="DeployToAutoLarge">
         <environmentvariables>
           <variable name="DOODLE_ENV">
             <value>autolarge</value>
@@ -98,7 +107,7 @@
           </job>
         </jobs>
       </stage>
-      <stage name="TestAutoLarge" fetchMaterials="false">
+      <stage name="TestAutoLarge">
         <environmentvariables>
           <variable name="DOODLE_ENV">
             <value>autolarge</value>
@@ -117,7 +126,14 @@
           </job>
         </jobs>
       </stage>
-      <stage name="DeployToMan" fetchMaterials="false">
+    </pipeline>
+    <pipeline name="Deploy_to_Manual" labeltemplate="1.0.${COUNT}" isLocked="false">
+      <materials>
+        <git url="https://github.com/FredrikWendt/doodleshop" />
+        <pipeline pipelineName="Build" stageName="Maven_package_Docker_build" materialName="Doodleshop_Docker_Image" />
+      </materials>
+      <stage name="DeployToMan">
+        <approval type="manual" />
         <environmentvariables>
           <variable name="DOODLE_ENV">
             <value>man</value>
@@ -129,12 +145,13 @@
               <exec command="bash">
                 <arg>deployandsmoke.sh</arg>
                 <arg>4</arg>
+                <runif status="passed" />
               </exec>
             </tasks>
           </job>
         </jobs>
       </stage>
-      <stage name="TestMan" fetchMaterials="false">
+      <stage name="TestMan">
         <environmentvariables>
           <variable name="DOODLE_ENV">
             <value>man</value>
@@ -153,11 +170,16 @@
           </job>
         </jobs>
       </stage>
-      <stage name="DeployToProd" fetchMaterials="false">
+    </pipeline>
+    <pipeline name="Deploy_to_PROD" labeltemplate="1.0.${COUNT}" isLocked="false">
+      <materials>
+        <pipeline pipelineName="Deploy_to_Manual" stageName="TestMan" materialName="Doodleshop_Docker_Image" />
+      </materials>
+      <stage name="DeployToProd">
         <approval type="manual" />
         <environmentvariables>
           <variable name="DOODLE_ENV">
-            <value>prod</value>
+            <value>man</value>
           </variable>
         </environmentvariables>
         <jobs>
@@ -166,6 +188,7 @@
               <exec command="bash">
                 <arg>deployandsmoke.sh</arg>
                 <arg>5</arg>
+                <runif status="passed" />
               </exec>
             </tasks>
           </job>
