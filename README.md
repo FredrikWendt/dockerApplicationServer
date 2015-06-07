@@ -3,7 +3,9 @@ dockerApplicationServer
 
 ## Starta med Docker-compose
 
-Installera boot2docker: http://boot2docker.io/
+För Linuxar: Installera Docker, och se till att versionen på ditt värd-OS matchar det som ligger i `gocdagent/Dockerfile`.
+
+För Mac OS X: Installera boot2docker: http://boot2docker.io/
 
 Öka minnet i virtualbox till 4GB från 2GB:
 
@@ -18,15 +20,23 @@ Man kan behöva sätta environment variabler genom:
 
     $ $(boot2docker shellinit)
 
-Installera Docker compose enligt http://docs.docker.com/compose/install/
+Installera Docker Compose (minst 2.0) enligt http://docs.docker.com/compose/install/
 
 Starta pipelinen:
 
+    $ docker-compose pull
+    $ docker-compose build
     $ docker-compose up
+
+Go.cd-agenten kommer starta snabbare än servern, men återansluter varje minut.
  
 Om du kör Mac OSX, ta reda på ip-adress. På Linux fungerar localhost:
 
     $ boot2docker ip
+
+Vänta tills du ser följande innan Go.cd-servern är igång:
+
+    | Go Server has started on port 8153 inside this container (1e95046c10ea)!
 
 Öppna en webbläsare på 
 

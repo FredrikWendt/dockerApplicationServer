@@ -2,6 +2,22 @@
 <cruise xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="cruise-config.xsd" schemaVersion="74">
   <server artifactsdir="artifacts" agentAutoRegisterKey="388b633a88de126531afa41eff9aa69e" commandRepositoryLocation="default" serverId="3c98e67f-7050-46ef-b051-fd8e63aef897" />
   <pipelines group="Doodleshop">
+    <pipeline name="DockerVersionTest">
+      <materials>
+        <git url="https://github.com/FredrikWendt/DockerVersionTest.git" />
+      </materials>
+      <stage name="VerifyWorkingEnvironment">
+        <jobs>
+          <job name="BuildAnAlmostEmptyContainer">
+            <tasks>
+              <exec command="./build.sh">
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
     <pipeline name="DoodleshopBAT" labeltemplate="1.0.${COUNT}" isLocked="false">
       <params>
         <param name="SOURCE_DIR"></param>
@@ -9,6 +25,7 @@
       <trackingtool link="https://github.com/dmarell/doodleshop/issues/${ID}" regex="##(\d+)" />
       <materials>
         <git url="https://github.com/dmarell/doodleshop" />
+        <pipeline pipelineName="DockerVersionTest" stageName="VerifyWorkingEnvironment" />
       </materials>
       <stage name="Build">
         <jobs>
